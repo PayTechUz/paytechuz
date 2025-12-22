@@ -5,7 +5,7 @@
 [![Documentation](https://img.shields.io/badge/docs-pay--tech.uz-blue.svg)](https://pay-tech.uz)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-PayTechUZ is a unified payment library for integrating with popular payment systems in Uzbekistan. It provides a simple and consistent interface for working with Payme, Click, and Atmos payment gateways.
+PayTechUZ is a unified payment library for integrating with popular payment systems in Uzbekistan. It provides a simple and consistent interface for working with Payme, Click, Atmos, and Uzum payment gateways.
 
 📖 **[Complete Documentation](https://pay-tech.uz)** | 🚀 **[Quick Start Guide](https://pay-tech.uz/quickstart)**
 
@@ -47,7 +47,7 @@ pip install paytechuz[flask]
 export PAYTECH_LICENSE_API_KEY="your-license-api-key-here"
 ```
 
-To obtain a production license API key, contact **@muhammadali_me** on Telegram.
+To obtain a production license API key, please visit **[https://pay-tech.uz/console](https://pay-tech.uz/console)** or contact **@muhammadali_me** on Telegram.
 
 ## Quick Start
 
@@ -59,13 +59,13 @@ To obtain a production license API key, contact **@muhammadali_me** on Telegram.
 from paytechuz.gateways.payme import PaymeGateway
 from paytechuz.gateways.click import ClickGateway
 from paytechuz.gateways.atmos import AtmosGateway
+from paytechuz.gateways.uzum.client import UzumGateway
 
 # Initialize Payme gateway
 payme = PaymeGateway(
     payme_id="your_payme_id",
     payme_key="your_payme_key",
-    is_test_mode=True,  # Set to False in production environment
-    license_api_key="your_license_api_key"
+    is_test_mode=True  # Set to False in production environment
 )
 
 # Initialize Click gateway
@@ -74,8 +74,7 @@ click = ClickGateway(
     merchant_id="your_merchant_id",
     merchant_user_id="your_merchant_user_id",
     secret_key="your_secret_key",
-    is_test_mode=True,  # Set to False in production environment
-    license_api_key="your_license_api_key"
+    is_test_mode=True  # Set to False in production environment
 )
 
 # Initialize Atmos gateway
@@ -84,8 +83,13 @@ atmos = AtmosGateway(
     consumer_secret="your_consumer_secret",
     store_id="your_store_id",
     terminal_id="your_terminal_id",  # optional
-    is_test_mode=True,  # Set to False in production environment
-    license_api_key="your_license_api_key"
+    is_test_mode=True  # Set to False in production environment
+)
+
+# Initialize Uzum gateway (Biller/open-service)
+uzum = UzumGateway(
+    service_id="your_service_id",  # Uzum Service ID
+    is_test_mode=True  # Set to False in production environment
 )
 
 # Generate payment links
@@ -102,11 +106,19 @@ click_link = click.create_payment(
     return_url="https://example.com/return"
 )
 
-atmos_payment = atmos.create_payment(
+atmos_link = atmos.create_payment(
     account_id="order_123",
     amount=150000  # amount in UZS
 )
-atmos_link = atmos_payment['payment_url']
+
+# Generate Uzum Biller payment URL
+# URL format: https://www.uzumbank.uz/open-service?serviceId=...&order_id=...&amount=...&redirectUrl=...
+uzum_link = uzum.create_payment(
+    id="order_123",  # Order ID (order_id parameter)
+    amount=100000,  # amount in som (will be converted to tiyin)
+    return_url="https://example.com/callback"  # redirectUrl parameter
+)
+# Result: https://www.uzumbank.uz/open-service?serviceId=your_service_id&order_id=order_123&amount=10000000&redirectUrl=https%3A%2F%2Fexample.com%2Fcallback
 ```
 
 ### Django Integration
@@ -172,6 +184,15 @@ PAYTECHUZ = {
         'ACCOUNT_MODEL': 'your_app.models.Order',
         'ACCOUNT_FIELD': 'id',
         'IS_TEST_MODE': True,  # Set to False in production
+    },
+    'UZUM': {
+        'SERVICE_ID': 'your_service_id',  # Uzum Service ID for Biller URL
+        'USERNAME': 'your_uzum_username',  # For webhook Basic Auth
+        'PASSWORD': 'your_uzum_password',  # For webhook Basic Auth
+        'ACCOUNT_MODEL': 'your_app.models.Order',
+        'ACCOUNT_FIELD': 'order_id',  # or 'id'
+        'AMOUNT_FIELD': 'amount',
+        'IS_TEST_MODE': True,  # Set to False in production
     }
 }
 ```
@@ -183,7 +204,8 @@ PAYTECHUZ = {
 from paytechuz.integrations.django.views import (
     BasePaymeWebhookView,
     BaseClickWebhookView,
-    BaseAtmosWebhookView
+    BaseAtmosWebhookView,
+    BaseUzumWebhookView
 )
 from .models import Order
 
@@ -219,6 +241,17 @@ class AtmosWebhookView(BaseAtmosWebhookView):
         order = Order.objects.get(id=transaction.account_id)
         order.status = 'cancelled'
         order.save()
+
+class UzumWebhookView(BaseUzumWebhookView):
+    def successfully_payment(self, params, transaction):
+        order = Order.objects.get(id=transaction.account_id)
+        order.status = 'paid'
+        order.save()
+
+    def cancelled_payment(self, params, transaction):
+        order = Order.objects.get(id=transaction.account_id)
+        order.status = 'cancelled'
+        order.save()
 ```
 
 4. Add webhook URLs to `urls.py`:
@@ -226,14 +259,14 @@ class AtmosWebhookView(BaseAtmosWebhookView):
 ```python
 # urls.py
 from django.urls import path
-from django.views.decorators.csrf import csrf_exempt
-from .views import PaymeWebhookView, ClickWebhookView, AtmosWebhookView
+from .views import PaymeWebhookView, ClickWebhookView, AtmosWebhookView, UzumWebhookView
 
 urlpatterns = [
     # ...
-    path('payments/webhook/payme/', csrf_exempt(PaymeWebhookView.as_view()), name='payme_webhook'),
-    path('payments/webhook/click/', csrf_exempt(ClickWebhookView.as_view()), name='click_webhook'),
-    path('payments/webhook/atmos/', csrf_exempt(AtmosWebhookView.as_view()), name='atmos_webhook'),
+    path('payments/webhook/payme/', PaymeWebhookView.as_view(), name='payme_webhook'),
+    path('payments/webhook/click/', ClickWebhookView.as_view(), name='click_webhook'),
+    path('payments/webhook/atmos/', AtmosWebhookView.as_view(), name='atmos_webhook'),
+    path('payments/webhook/uzum/<str:action>/', UzumWebhookView.as_view(), name='uzum_webhook'),
 ]
 ```
 
@@ -353,7 +386,7 @@ async def atmos_webhook(request: Request, db: Session = Depends(get_db)):
     import json
 
     # Atmos webhook handler
-    atmos_handler = AtmosWebhookHandler(api_key="your_atmos_api_key")
+    atmos_handler = AtmosWebhookHandler(license_api_key="your_atmos_api_key")
 
     try:
         # Get request body
@@ -381,29 +414,6 @@ async def atmos_webhook(request: Request, db: Session = Depends(get_db)):
             'message': f'Error: {str(e)}'
         }
 ```
-
-## Documentation
-
-Detailed documentation is available in multiple languages:
-
-- 📖 [English Documentation](src/docs/en/index.md)
-- 📖 [O'zbek tilidagi hujjatlar](src/docs/index.md)
-
-### Framework-Specific Documentation
-
-- [Django Integration Guide](src/docs/en/django_integration.md) | [Django integratsiyasi bo'yicha qo'llanma](src/docs/django_integration.md)
-- [FastAPI Integration Guide](src/docs/en/fastapi_integration.md) | [FastAPI integratsiyasi bo'yicha qo'llanma](src/docs/fastapi_integration.md)
-- [Atmos Integration Guide](src/docs/en/atmos_integration.md) | [Atmos integratsiyasi bo'yicha qo'llanma](src/docs/atmos_integration.md)
-
-## Supported Payment Systems
-
-- **Payme** - [Official Website](https://payme.uz)
-- **Click** - [Official Website](https://click.uz)
-- **Atmos** - [Official Website](https://atmos.uz)
-
-## Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
 
 📖 **Documentation:** [pay-tech.uz](https://pay-tech.uz)  
 💬 **Support:** [Telegram](https://t.me/paytechuz)
