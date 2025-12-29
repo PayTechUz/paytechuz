@@ -1,3 +1,4 @@
+
 # paytechuz
 
 [![PyPI version](https://badge.fury.io/py/paytechuz.svg)](https://badge.fury.io/py/paytechuz)
@@ -5,7 +6,7 @@
 [![Documentation](https://img.shields.io/badge/docs-pay--tech.uz-blue.svg)](https://pay-tech.uz)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-PayTechUZ is a unified payment library for integrating with popular payment systems in Uzbekistan. It provides a simple and consistent interface for working with Payme, Click, Atmos, and Uzum payment gateways.
+PayTechUZ is a unified payment library for integrating with popular payment systems in Uzbekistan. It provides a simple and consistent interface for working with Payme, Click, Uzum, and Paynet payment gateways.
 
 📖 **[Complete Documentation](https://pay-tech.uz)** | 🚀 **[Quick Start Guide](https://pay-tech.uz/quickstart)**
 
@@ -58,8 +59,8 @@ To obtain a production license API key, please visit **[https://pay-tech.uz/cons
 ```python
 from paytechuz.gateways.payme import PaymeGateway
 from paytechuz.gateways.click import ClickGateway
-from paytechuz.gateways.atmos import AtmosGateway
 from paytechuz.gateways.uzum.client import UzumGateway
+from paytechuz.gateways.paynet import PaynetGateway
 
 # Initialize Payme gateway
 payme = PaymeGateway(
@@ -77,27 +78,28 @@ click = ClickGateway(
     is_test_mode=True  # Set to False in production environment
 )
 
-# Initialize Atmos gateway
-atmos = AtmosGateway(
-    consumer_key="your_consumer_key",
-    consumer_secret="your_consumer_secret",
-    store_id="your_store_id",
-    terminal_id="your_terminal_id",  # optional
-    is_test_mode=True  # Set to False in production environment
-)
-
 # Initialize Uzum gateway (Biller/open-service)
 uzum = UzumGateway(
     service_id="your_service_id",  # Uzum Service ID
     is_test_mode=True  # Set to False in production environment
 )
 
+# Initialize Paynet gateway
+paynet = PaynetGateway(
+    merchant_id="your_merchant_id",  # Paynet Merchant ID (accepts both str and int)
+    is_test_mode=False  # Set to True for testing
+)
+
 # Generate payment links
 payme_link = payme.create_payment(
     id="order_123",
     amount=150000,  # amount in UZS
-    return_url="https://example.com/return"
+    return_url="https://example.com/return",
+    account_field_name="id"  # Payme-specific: field name for account ID (default: "order_id")
 )
+# Note: account_field_name is only used for Payme and specifies the field name
+# that will be used in the payment URL (e.g., ac.id=123).
+# Other payment gateways (Click, Uzum) don't use this parameter.
 
 click_link = click.create_payment(
     id="order_123",
@@ -106,10 +108,6 @@ click_link = click.create_payment(
     return_url="https://example.com/return"
 )
 
-atmos_link = atmos.create_payment(
-    account_id="order_123",
-    amount=150000  # amount in UZS
-)
 
 # Generate Uzum Biller payment URL
 # URL format: https://www.uzumbank.uz/open-service?serviceId=...&order_id=...&amount=...&redirectUrl=...
@@ -119,7 +117,55 @@ uzum_link = uzum.create_payment(
     return_url="https://example.com/callback"  # redirectUrl parameter
 )
 # Result: https://www.uzumbank.uz/open-service?serviceId=your_service_id&order_id=order_123&amount=10000000&redirectUrl=https%3A%2F%2Fexample.com%2Fcallback
+
+# Generate Paynet payment URL
+# URL format: https://app.paynet.uz/?m={merchant_id}&c={payment_id}&a={amount}
+paynet_link = paynet.create_payment(
+    id="order_123",  # Payment ID (c parameter)
+    amount=15000000  # amount in tiyin (optional, a parameter) - 150000 som = 15000000 tiyin
+)
+# Result: https://app.paynet.uz/?m=your_merchant_id&c=order_123&a=15000000
+
+# Or without amount (amount will be configured on Paynet's side)
+paynet_link_no_amount = paynet.create_payment(id="order_123")
+# Result: https://app.paynet.uz/?m=your_merchant_id&c=order_123
 ```
+
+### Important Notes
+
+#### Payme `account_field_name` Parameter
+**Example**:
+```python
+# Using default account_field_name = "order_id"
+payme_link = payme.create_payment(
+    id="123",
+    amount=150000,
+    return_url="https://example.com/return"
+)
+# Using custom account_field_name
+payme_link = payme.create_payment(
+    id="123",
+    amount=150000,
+    return_url="https://example.com/return",
+    account_field_name="id"
+)
+```
+
+**Note**: Other payment gateways (Click, Uzum, Paynet) do not use the `account_field_name` parameter.
+
+#### Paynet Payment Gateway
+
+Paynet uses a unique URL-based payment system:
+
+- **URL Format**: `https://app.paynet.uz/?m={merchant_id}&c={payment_id}&a={amount}`
+- **merchant_id**: Accepts both `str` and `int` types (automatically converted to string)
+- **amount**: Optional parameter in tiyin. If provided, it will be included in the URL as `a` parameter
+- **No return_url**: Paynet does NOT support return URL parameter
+- **Mobile-first**: Payment is completed in the Paynet mobile app
+  - Desktop users: QR code is displayed to scan
+  - Mobile users: Direct link to open Paynet app
+- **Webhooks**: Payment status updates are handled through JSON-RPC 2.0 webhooks
+
 
 ### Django Integration
 
@@ -164,7 +210,6 @@ PAYTECHUZ = {
         'ACCOUNT_FIELD': 'id',
         'AMOUNT_FIELD': 'amount',
         'ONE_TIME_PAYMENT': True,
-        'IS_TEST_MODE': True,  # Set to False in production
     },
     'CLICK': {
         'SERVICE_ID': 'your_service_id',
@@ -172,19 +217,11 @@ PAYTECHUZ = {
         'MERCHANT_USER_ID': 'your_merchant_user_id',
         'SECRET_KEY': 'your_secret_key',
         'ACCOUNT_MODEL': 'your_app.models.Order',
-        'COMMISSION_PERCENT': 0.0,
-        'IS_TEST_MODE': True,  # Set to False in production
-    },
-    'ATMOS': {
-        'CONSUMER_KEY': 'your_atmos_consumer_key',
-        'CONSUMER_SECRET': 'your_atmos_consumer_secret',
-        'STORE_ID': 'your_atmos_store_id',
-        'TERMINAL_ID': 'your_atmos_terminal_id',  # Optional
-        'API_KEY': 'your_atmos_api_key'
-        'ACCOUNT_MODEL': 'your_app.models.Order',
         'ACCOUNT_FIELD': 'id',
-        'IS_TEST_MODE': True,  # Set to False in production
+        'COMMISSION_PERCENT': 0.0,
+        'ONE_TIME_PAYMENT': True,
     },
+
     'UZUM': {
         'SERVICE_ID': 'your_service_id',  # Uzum Service ID for Biller URL
         'USERNAME': 'your_uzum_username',  # For webhook Basic Auth
@@ -192,10 +229,21 @@ PAYTECHUZ = {
         'ACCOUNT_MODEL': 'your_app.models.Order',
         'ACCOUNT_FIELD': 'order_id',  # or 'id'
         'AMOUNT_FIELD': 'amount',
-        'IS_TEST_MODE': True,  # Set to False in production
+        'ONE_TIME_PAYMENT': True,
+    },
+    'PAYNET': {
+        'SERVICE_ID': 'your_paynet_service_id',
+        'USERNAME': 'your_paynet_username',
+        'PASSWORD': 'your_paynet_password',
+        'ACCOUNT_MODEL': 'your_app.models.Order',
+        'ACCOUNT_FIELD': 'id',
+        'AMOUNT_FIELD': 'amount',
+        'ONE_TIME_PAYMENT': True,
     }
 }
 ```
+
+> **Note:** The `IS_TEST_MODE` parameter is configured when creating payment gateways (e.g., `PaymeGateway`, `ClickGateway`), not in webhook settings. Webhooks receive requests on the same URL regardless of test or production environment.
 
 3. Create webhook handlers:
 
@@ -204,8 +252,8 @@ PAYTECHUZ = {
 from paytechuz.integrations.django.views import (
     BasePaymeWebhookView,
     BaseClickWebhookView,
-    BaseAtmosWebhookView,
-    BaseUzumWebhookView
+    BaseUzumWebhookView,
+    BasePaynetWebhookView
 )
 from .models import Order
 
@@ -220,6 +268,28 @@ class PaymeWebhookView(BasePaymeWebhookView):
         order.status = 'cancelled'
         order.save()
 
+    def get_check_data(self, params, account): # optional
+        # Return additional data for CheckPerformTransaction (fiscal receipt)
+        return {
+            "additional": {"first_name": account.first_name, "balance": account.balance},
+            "detail": {
+                "receipt_type": 0,
+                "shipping": {"title": "Yetkazib berish", "price": 10000},
+                "items": [
+                    {
+                        "discount": 0,
+                        "title": account.product_name,
+                        "price": int(account.amount * 100),
+                        "count": 1,
+                        "code": "00001",
+                        "units": 1,
+                        "vat_percent": 0,
+                        "package_code": "123456"
+                    }
+                ]
+            }
+        }
+
 class ClickWebhookView(BaseClickWebhookView):
     def successfully_payment(self, params, transaction):
         order = Order.objects.get(id=transaction.account_id)
@@ -231,16 +301,7 @@ class ClickWebhookView(BaseClickWebhookView):
         order.status = 'cancelled'
         order.save()
 
-class AtmosWebhookView(BaseAtmosWebhookView):
-    def successfully_payment(self, params, transaction):
-        order = Order.objects.get(id=transaction.account_id)
-        order.status = 'paid'
-        order.save()
 
-    def cancelled_payment(self, params, transaction):
-        order = Order.objects.get(id=transaction.account_id)
-        order.status = 'cancelled'
-        order.save()
 
 class UzumWebhookView(BaseUzumWebhookView):
     def successfully_payment(self, params, transaction):
@@ -252,6 +313,37 @@ class UzumWebhookView(BaseUzumWebhookView):
         order = Order.objects.get(id=transaction.account_id)
         order.status = 'cancelled'
         order.save()
+
+    def get_check_data(self, params, account):
+        # Return additional data for check/create/status/confirm actions
+        # Example: returning user's full name
+        return {
+            "fio": {
+                "value": "Ivanov Ivan"
+            }
+        }
+
+class PaynetWebhookView(BasePaynetWebhookView):
+    def successfully_payment(self, params, transaction):
+        order = Order.objects.get(id=transaction.account_id)
+        order.status = 'paid'
+        order.save()
+
+    def cancelled_payment(self, params, transaction):
+        order = Order.objects.get(id=transaction.account_id)
+        order.status = 'cancelled'
+        order.save()
+
+    def get_check_data(self, params, account) # optional:
+        # Return additional data for GetInformation
+        order = Order.objects.get(id=account.id)
+        # You can use any key value pairs
+        return {
+            "fields": {
+                "first_name": order.user.first_name,
+                "balance": order.user.balance
+            }
+        }
 ```
 
 4. Add webhook URLs to `urls.py`:
@@ -259,14 +351,15 @@ class UzumWebhookView(BaseUzumWebhookView):
 ```python
 # urls.py
 from django.urls import path
-from .views import PaymeWebhookView, ClickWebhookView, AtmosWebhookView, UzumWebhookView
+from .views import PaymeWebhookView, ClickWebhookView, UzumWebhookView, PaynetWebhookView
 
 urlpatterns = [
     # ...
     path('payments/webhook/payme/', PaymeWebhookView.as_view(), name='payme_webhook'),
     path('payments/webhook/click/', ClickWebhookView.as_view(), name='click_webhook'),
-    path('payments/webhook/atmos/', AtmosWebhookView.as_view(), name='atmos_webhook'),
+
     path('payments/webhook/uzum/<str:action>/', UzumWebhookView.as_view(), name='uzum_webhook'),
+    path('payments/webhook/paynet/', PaynetWebhookView.as_view(), name='paynet_webhook'),
 ]
 ```
 
@@ -320,7 +413,6 @@ from fastapi import FastAPI, Request, Depends
 from sqlalchemy.orm import Session
 
 from paytechuz.integrations.fastapi import PaymeWebhookHandler, ClickWebhookHandler
-from paytechuz.gateways.atmos.webhook import AtmosWebhookHandler
 
 
 app = FastAPI()
@@ -377,42 +469,13 @@ async def click_webhook(request: Request, db: Session = Depends(get_db)):
         db=db,
         service_id="your_service_id",
         secret_key="your_secret_key",
-        account_model=Order
+        account_model=Order,
+        account_field='id',
+        one_time_payment=True
     )
     return await handler.handle_webhook(request)
 
-@app.post("/payments/atmos/webhook")
-async def atmos_webhook(request: Request, db: Session = Depends(get_db)):
-    import json
 
-    # Atmos webhook handler
-    atmos_handler = AtmosWebhookHandler(license_api_key="your_atmos_api_key")
-
-    try:
-        # Get request body
-        body = await request.body()
-        webhook_data = json.loads(body.decode('utf-8'))
-
-        # Process webhook
-        response = atmos_handler.handle_webhook(webhook_data)
-
-        if response['status'] == 1:
-            # Payment successful
-            invoice = webhook_data.get('invoice')
-
-            # Update order status
-            order = db.query(Order).filter(Order.id == invoice).first()
-            if order:
-                order.status = "paid"
-                db.commit()
-
-        return response
-
-    except Exception as e:
-        return {
-            'status': 0,
-            'message': f'Error: {str(e)}'
-        }
 ```
 
 📖 **Documentation:** [pay-tech.uz](https://pay-tech.uz)  
