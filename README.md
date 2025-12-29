@@ -41,7 +41,7 @@ pip install paytechuz[flask]
 
 ## API Key Configuration
 
-**Important:** PayTechUZ requires a valid license API key for license validation.
+**Important:** PayTechUZ requires a valid license API key for license validation. Plz set it to .env
 
 ```bash
 # Set your license API key as an environment variable
