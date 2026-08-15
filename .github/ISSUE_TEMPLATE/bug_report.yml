@@ -1,0 +1,77 @@
+name: Bug report
+description: Something behaves differently than documented
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Please redact merchant keys, card data and anything else you would not
+        want public. For security vulnerabilities do not use this form — see
+        [SECURITY.md](https://github.com/PayTechUz/paytechuz/blob/main/SECURITY.md).
+
+  - type: input
+    id: version
+    attributes:
+      label: paytechuz version
+      placeholder: "0.4.0"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: framework
+    attributes:
+      label: Framework
+      options:
+        - Django
+        - FastAPI
+        - None (gateway used directly)
+    validations:
+      required: true
+
+  - type: input
+    id: framework-version
+    attributes:
+      label: Framework and Python version
+      placeholder: "Django 5.2, Python 3.12"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: gateway
+    attributes:
+      label: Gateway
+      options: [Payme, Click, Uzum, Paynet, Octo, Several, Not gateway specific]
+    validations:
+      required: true
+
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened
+      description: What you expected, and what you got instead.
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: How to reproduce
+      description: |
+        The smallest code or request that shows the problem. For webhook
+        issues, the raw request body and the response are usually enough.
+      render: python
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Traceback or logs
+      render: shell
+
+  - type: textarea
+    id: settings
+    attributes:
+      label: Relevant PAYTECHUZ settings
+      description: With the keys removed.
+      render: python

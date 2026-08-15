@@ -1,0 +1,34 @@
+name: Feature request
+description: Propose a change or a new capability
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem does this solve
+      description: |
+        Describe the situation you are in, not the solution you have in mind.
+        What are you unable to do today?
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed change
+      description: What the API or behaviour would look like.
+      render: python
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: What you tried instead
+      description: Workarounds you are using today, and why they fall short.
+
+  - type: checkboxes
+    id: scope
+    attributes:
+      label: Scope
+      options:
+        - label: This is a new payment gateway
+        - label: I am willing to open a pull request for it

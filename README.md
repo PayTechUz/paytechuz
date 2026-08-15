@@ -1,15 +1,35 @@
 # paytechuz
 
-[![PyPI version](https://badge.fury.io/py/paytechuz.svg)](https://badge.fury.io/py/paytechuz)
+[![PyPI version](https://badge.fury.io/py/paytechuz.svg)](https://pypi.org/project/paytechuz/)
 [![Python Versions](https://img.shields.io/pypi/pyversions/paytechuz.svg)](https://pypi.org/project/paytechuz/)
+[![CI](https://github.com/PayTechUz/paytechuz/actions/workflows/ci.yml/badge.svg)](https://github.com/PayTechUz/paytechuz/actions/workflows/ci.yml)
 [![Documentation](https://img.shields.io/badge/docs-pay--tech.uz-blue.svg)](https://pay-tech.uz)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-PayTechUZ is a unified payment library for integrating with popular payment systems in Uzbekistan. It provides a simple and consistent interface for working with Payme, Click, Uzum, Paynet, and Octo payment gateways.
+One library for the payment gateways used in Uzbekistan — **Payme, Click,
+Uzum, Paynet and Octo** — with the same interface for each, and webhook
+handlers for Django and FastAPI that you subclass instead of writing.
 
-Fully open source: pure Python, no compiled extensions, no license keys, no telemetry. Everything the package does is in this repository.
+Fully open source: pure Python, no compiled extensions, no license key, no
+telemetry. Everything the package does at runtime is in this repository.
 
-📖 **[Documentation](https://pay-tech.uz)** | 💬 **[Telegram](https://t.me/paytechuz)**
+📖 **[Documentation](https://pay-tech.uz)** &nbsp;|&nbsp; 💬 **[Telegram](https://t.me/paytechuz)** &nbsp;|&nbsp; 📋 **[Changelog](CHANGELOG.md)**
+
+## Contents
+
+- [Features](#features)
+- [Compatibility](#compatibility)
+- [Installation](#installation)
+- [Quick Start](#quick-start)
+  - [Generate payment links](#generate-payment-links)
+  - [Provider notes](#provider-notes)
+- [Django Integration](#django-integration)
+- [FastAPI Integration](#fastapi-integration)
+- [The transaction table](#the-transaction-table)
+- [Project layout](#project-layout)
+- [Development](#development)
+- [Contributing](#contributing)
+- [License](#license)
 
 ## Features
 
@@ -18,6 +38,18 @@ Fully open source: pure Python, no compiled extensions, no license keys, no tele
 - **Webhook handling**: ready-to-use webhook handlers for payment notifications
 - **Transaction management**: automatic transaction tracking in a single table
 - **Extensible**: adding a new provider means adding one gateway and one webhook class
+
+## Compatibility
+
+| | Supported |
+| --- | --- |
+| Python | 3.8 – 3.12 |
+| Django | 3.0 – 5.x |
+| FastAPI | 0.68 – 0.x, with SQLAlchemy 1.4 – 2.x and pydantic 2.x |
+| Gateways | Payme, Click, Uzum, Paynet, Octo |
+
+Webhook handlers for Uzum, Paynet and Octo are currently Django only. Payme and
+Click are available on both frameworks.
 
 ## Installation
 
@@ -30,6 +62,10 @@ pip install "paytechuz[django]"
 # For FastAPI
 pip install "paytechuz[fastapi]"
 ```
+
+> **Upgrading from 0.3.x?** `0.4.0` removes the license key entirely — delete
+> `PAYTECH_LICENSE_API_KEY` from your environment, it is no longer read. Public
+> imports are unchanged. See the [changelog](CHANGELOG.md) for the full list.
 
 ## Quick Start
 
@@ -481,6 +517,46 @@ async def click_webhook(request: Request, db: Session = Depends(get_db)):
 > The FastAPI integration currently ships webhook handlers for Payme and Click.
 > Uzum, Paynet and Octo webhooks are available for Django.
 
+## The transaction table
+
+Both integrations record every callback in one table, `payments`, so you rarely
+need provider-specific queries.
+
+```python
+from paytechuz.integrations.django.models import PaymentTransaction
+
+paid = PaymentTransaction.objects.filter(
+    gateway=PaymentTransaction.PAYME,
+    state=PaymentTransaction.SUCCESSFULLY,
+)
+```
+
+| Column | Meaning |
+| --- | --- |
+| `gateway` | `payme`, `click`, `uzum`, `paynet` or `octo` |
+| `transaction_id` | the provider's id; unique together with `gateway` |
+| `account_id` | your order's primary key, as a string |
+| `amount` | in som, not tiyin |
+| `state` | see below |
+| `reason` | provider cancellation code, when one was sent |
+| `extra_data` | the raw callback payload |
+| `created_at` / `performed_at` / `cancelled_at` | timestamps |
+
+States:
+
+| Value | Constant | Meaning |
+| --- | --- | --- |
+| `0` | `CREATED` | row exists, nothing confirmed |
+| `1` | `INITIATING` | provider created the transaction |
+| `2` | `SUCCESSFULLY` | paid |
+| `-1` | `CANCELLED_DURING_INIT` | cancelled before it was performed |
+| `-2` | `CANCELLED` | cancelled after a successful payment |
+
+> **Note on the Django app label.** The integration is installed as
+> `paytechuz.integrations.django`, so Django derives the app label `django` and
+> its migrations are recorded under that name. This is why `makemigrations`
+> output and `django_migrations` rows mention an app called `django`.
+
 ## Project layout
 
 ```
@@ -506,6 +582,15 @@ make test          # run the test suite
 make lint          # flake8
 make build         # build sdist + wheel into dist/
 ```
+
+## Contributing
+
+Pull requests are welcome. [CONTRIBUTING.md](CONTRIBUTING.md) covers the setup,
+what CI checks, and the extra care that amount handling and webhook protocols
+need. `docs/abstract_webhook.md` is the contract to follow when adding a
+gateway.
+
+Found a security issue? Do not open an issue — see [SECURITY.md](SECURITY.md).
 
 ## License
 
