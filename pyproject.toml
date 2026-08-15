@@ -1,0 +1,66 @@
+[build-system]
+requires = ["setuptools>=61", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "paytechuz"
+description = "Unified Python package for Uzbekistan payment gateways (Payme, Click, Uzum, Paynet, Octo)"
+readme = "README.md"
+requires-python = ">=3.8"
+license = {text = "MIT"}
+authors = [
+    {name = "Muhammadali Akbarov", email = "muhammadali17abc@gmail.com"}
+]
+keywords = [
+    "paytechuz", "payme", "click", "uzum", "paynet", "octo", "uzbekistan",
+    "payment", "gateway", "payment-gateway", "payment-processing",
+    "django", "fastapi"
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+]
+dependencies = [
+    "requests>=2.0,<3.0",
+]
+dynamic = ["version"]
+
+[project.optional-dependencies]
+django = [
+    "django>=3.0,<6.0",
+]
+fastapi = [
+    "fastapi>=0.68.0,<1.0.0",
+    "sqlalchemy>=1.4,<3.0",
+    "python-multipart>=0.0.5",
+    "pydantic>=2.0,<3.0",
+]
+dev = [
+    "pytest>=7.0",
+    "build",
+    "twine",
+]
+
+[project.urls]
+Homepage = "https://github.com/Muhammadali-Akbarov/paytechuz"
+Documentation = "https://pay-tech.uz"
+Source = "https://github.com/Muhammadali-Akbarov/paytechuz"
+Issues = "https://github.com/Muhammadali-Akbarov/paytechuz/issues"
+
+[tool.setuptools.dynamic]
+version = {attr = "paytechuz.__version__"}
+
+[tool.setuptools.packages.find]
+include = ["paytechuz*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

@@ -1,0 +1,3 @@
+"""
+Django migrations for PayTechUZ.
+"""
