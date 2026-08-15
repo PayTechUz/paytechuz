@@ -1,4 +1,4 @@
-# paytechuz
+# PayTechUZ — Payme, Click, Uzum, Paynet and Octo payments for Python
 
 [![PyPI version](https://badge.fury.io/py/paytechuz.svg)](https://pypi.org/project/paytechuz/)
 [![Python Versions](https://img.shields.io/pypi/pyversions/paytechuz.svg)](https://pypi.org/project/paytechuz/)
@@ -14,6 +14,13 @@ Fully open source: pure Python, no compiled extensions, no license key, no
 telemetry. Everything the package does at runtime is in this repository.
 
 📖 **[Documentation](https://pay-tech.uz)** &nbsp;|&nbsp; 💬 **[Telegram](https://t.me/paytechuz)** &nbsp;|&nbsp; 📋 **[Changelog](CHANGELOG.md)**
+
+```bash
+pip install paytechuz
+```
+
+<sub>🇺🇿 Payme, Click, Uzum, Paynet va Octo integratsiyasi — Django va FastAPI uchun bitta Python kutubxonasi.<br/>
+🇷🇺 Интеграция Payme, Click, Uzum, Paynet и Octo — одна Python-библиотека для Django и FastAPI.</sub>
 
 ## Contents
 
