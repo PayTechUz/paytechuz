@@ -5,6 +5,11 @@ All notable changes to this project are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.1]
+
+Documentation only. The README and this changelog were trimmed; the package
+itself is unchanged from `0.4.0`.
+
 ## [0.4.0] - 2026-08-15
 
 The library is now fully open source. Everything it does at runtime is in this

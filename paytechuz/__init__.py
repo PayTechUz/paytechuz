@@ -5,7 +5,7 @@ This library provides a unified interface for working with Payme, Click, Uzum,
 Paynet and Octo payment systems in Uzbekistan. It supports Django and FastAPI.
 """
 
-__version__ = '0.4.0'
+__version__ = '0.4.1'
 
 # Check framework availability
 try:
