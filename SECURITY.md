@@ -10,11 +10,8 @@ security reports are treated as the highest priority.
 | 0.4.x | Yes |
 | 0.3.x and earlier | No — see the note below |
 
-`0.3.x` was distributed as compiled wheels that required a license key. Its
-source distributions on PyPI contain the retired license module, including an
-offline key list and an HMAC secret. Those values are public and should be
-treated as compromised. They grant no access to this project and are not used
-by `0.4.x`. If you are on `0.3.x`, upgrade.
+`0.3.x` was distributed as compiled wheels and is no longer maintained. If you
+are on `0.3.x`, upgrade.
 
 ## Reporting a vulnerability
 

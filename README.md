@@ -10,8 +10,8 @@ One library for the payment gateways used in Uzbekistan — **Payme, Click,
 Uzum, Paynet and Octo** — with the same interface for each, and webhook
 handlers for Django and FastAPI that you subclass instead of writing.
 
-Fully open source: pure Python, no compiled extensions, no license key, no
-telemetry. Everything the package does at runtime is in this repository.
+Fully open source: pure Python, no compiled extensions. Everything the
+package does at runtime is in this repository.
 
 📖 **[Documentation](https://pay-tech.uz)** &nbsp;|&nbsp; 💬 **[Telegram](https://t.me/paytechuz)** &nbsp;|&nbsp; 📋 **[Changelog](CHANGELOG.md)**
 
@@ -69,10 +69,6 @@ pip install "paytechuz[django]"
 # For FastAPI
 pip install "paytechuz[fastapi]"
 ```
-
-> **Upgrading from 0.3.x?** `0.4.0` removes the license key entirely — delete
-> `PAYTECH_LICENSE_API_KEY` from your environment, it is no longer read. Public
-> imports are unchanged. See the [changelog](CHANGELOG.md) for the full list.
 
 ## Quick Start
 

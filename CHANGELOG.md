@@ -8,19 +8,14 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 ## [0.4.0] - 2026-08-15
 
 The library is now fully open source. Everything it does at runtime is in this
-repository: pure Python, no compiled extensions, no license key, no telemetry.
+repository: pure Python, no compiled extensions. Nothing in the package
+contacts an external service other than the payment gateway you configure.
 
 ### Removed
 
-- **License validation.** `paytechuz/license.py` is gone, along with the
-  `PAYTECH_LICENSE_API_KEY` environment variable, the usage metering it
-  performed and the network requests it made on import and on every successful
-  payment. Nothing in the package contacts an external service other than the
-  payment gateway you configure.
 - **Compiled distribution.** Wheels are `py3-none-any` instead of
   per-platform binaries. The Cython build pipeline, the Docker build images
   and the `.so` artifacts are removed.
-- `MissingLicenseKeyError` and `InvalidLicenseKeyError`.
 - The Flask extra, which never had an implementation behind it.
 
 ### Added
@@ -72,16 +67,8 @@ repository: pure Python, no compiled extensions, no license key, no telemetry.
 - FastAPI's `ClickWebhookHandler` read a hardcoded `amount` attribute instead
   of the configured `amount_field`.
 
-### Security
-
-- The published `0.3.x` source distributions contain the retired license
-  module, including its offline key list and an HMAC secret. Those values
-  should be treated as compromised. They grant no access to this project and
-  are not used by `0.4.x`.
-
 ## [0.3.51] and earlier
 
-Released as compiled wheels requiring `PAYTECH_LICENSE_API_KEY`. See the git
-history for details.
+Released as compiled wheels. See the git history for details.
 
 [0.4.0]: https://github.com/PayTechUz/paytechuz/releases/tag/v0.4.0
